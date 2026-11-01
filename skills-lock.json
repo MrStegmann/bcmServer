@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "skills": {
+    "313-frameworks-spring-db-migrations-flyway": {
+      "source": "jabrena/plinth",
+      "sourceType": "github",
+      "skillPath": "skills/313-frameworks-spring-db-migrations-flyway/SKILL.md",
+      "computedHash": "5f5ec4e555c3a49bf542787e90afc2bf90729aa6e09b168ee5533461147c5589"
+    },
+    "create-readme": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/create-readme/SKILL.md",
+      "computedHash": "d0ece1b2164ce1376e4ab6e98d6ac079df3a2a94f5f02224362b6a1ce2516ae9"
+    },
+    "hexagonal-architecture": {
+      "source": "affaan-m/ecc",
+      "sourceType": "github",
+      "skillPath": "skills/hexagonal-architecture/SKILL.md",
+      "computedHash": "9bcc7b90143ab607eb6dbac67df028c9d8c7303e787395da5b2ef311f52e55eb"
+    },
+    "java-jpa-hibernate": {
+      "source": "pluginagentmarketplace/custom-plugin-java",
+      "sourceType": "github",
+      "skillPath": "skills/java-jpa-hibernate/SKILL.md",
+      "computedHash": "16d57e6fc655423b66191c0b9e9bca7b59080d8a06f9740a9f5cde9a2d9c082e"
+    },
+    "java-springboot": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/java-springboot/SKILL.md",
+      "computedHash": "f1b9c6b1277178fc33e5a612761c1cd1cf6ab5f946d05d69d52026d142c0a0c1"
+    },
+    "multi-stage-dockerfile": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/multi-stage-dockerfile/SKILL.md",
+      "computedHash": "698bf93a84dae18fd7bd0b1d35c21427307fde78fbdf4624be9726f5f98189ca"
+    },
+    "spring-boot-cache": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "skillPath": "plugins/developer-kit-java/skills/spring-boot-cache/SKILL.md",
+      "computedHash": "fedd5e520f8768b8679e8d155588b2fe2453732e588b4f0759d9e18c56c72842"
+    },
+    "spring-boot-security-jwt": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "skillPath": "plugins/developer-kit-java/skills/spring-boot-security-jwt/SKILL.md",
+      "computedHash": "f04cfa9e9e9cc68eefbfc7eb9e7a8d4f7e23f1a5545894f94aa88ce2dc2fe065"
+    },
+    "spring-web": {
+      "source": "claude-dev-suite/claude-dev-suite",
+      "sourceType": "github",
+      "skillPath": "skills/backend-frameworks/spring-web/SKILL.md",
+      "computedHash": "528ad0a921d266907eacae14b61b850007a3027c0975a63bf2a6a9af53f37a00"
+    },
+    "supabase": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/supabase/SKILL.md",
+      "computedHash": "af1844ade632808fc0c15cf2db87daf3b2431c5262dc8a0c3ea7d70880fadf91"
+    },
+    "supabase-postgres-best-practices": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/supabase-postgres-best-practices/SKILL.md",
+      "computedHash": "128fac78002d916c8ca908245d398e634f540d8bcf20915b2b2359aeb18eba59"
+    }
+  }
+}

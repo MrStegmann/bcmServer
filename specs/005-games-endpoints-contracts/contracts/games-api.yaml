@@ -1,0 +1,586 @@
+openapi: 3.0.3
+info:
+  title: BCM Server - Games API
+  description: Protected CRUD endpoints for managing basketball games, quarter-by-quarter scores, fouls, and match statuses within BCM (Basket Club Manager).
+  version: 1.0.0
+servers:
+  - url: /api
+    description: Standard API Base Path
+  - url: /api/v1
+    description: Versioned API Base Path
+  - url: /
+    description: Root Path Alternative
+
+paths:
+  /games:
+    get:
+      tags:
+        - Games
+      summary: List all games or filter by team
+      description: Retrieves all games. If the `teamId` query parameter is provided, returns only games associated with the specified team. Requires a valid JWT token.
+      operationId: getGames
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: teamId
+          in: query
+          required: false
+          description: Optional filter to retrieve games belonging to the specified team
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Successfully retrieved list of games
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GameResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      tags:
+        - Games
+      summary: Create a new game
+      description: Creates a new basketball game for an existing team. Enforces JWT authentication precedence before request payload validation.
+      operationId: createGame
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGameRequest'
+      responses:
+        '201':
+          description: Game successfully created
+          headers:
+            Location:
+              description: URI of the newly created game resource
+              schema:
+                type: string
+                example: /api/games/1
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Associated team specified in team_id not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /games/{id}:
+    get:
+      tags:
+        - Games
+      summary: Retrieve a single game by ID
+      description: Fetches full game details including quarter-by-quarter scores, fouls, round, and status. Requires valid JWT token.
+      operationId: getGameById
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique positive integer identifier of the game
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Successfully retrieved game details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags:
+        - Games
+      summary: Update an existing game
+      description: Updates full game attributes, scores, fouls, and status. Validates JWT before evaluating request payload.
+      operationId: updateGame
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique positive integer identifier of the game to update
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGameRequest'
+      responses:
+        '200':
+          description: Game successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Game or referenced team not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+    delete:
+      tags:
+        - Games
+      summary: Delete a game
+      description: Permanently removes a game and cascades deletion to dependent player stats and match cache records. Requires valid JWT token.
+      operationId: deleteGame
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique positive integer identifier of the game to delete
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          example: 1
+      responses:
+        '204':
+          description: Game successfully deleted (no response body)
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Stateless JSON Web Token passed in Authorization header formatted as 'Bearer <token>'.
+
+  schemas:
+    CreateGameRequest:
+      type: object
+      required:
+        - team_id
+        - opponent
+        - date
+      properties:
+        team_id:
+          type: integer
+          format: int64
+          minimum: 1
+          description: ID of the associated home team
+          example: 1
+        opponent:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Name of the opposing team
+          example: CB Gran Canaria
+        round:
+          type: string
+          description: Tournament or league round (defaults to '1' if omitted)
+          example: '4'
+          default: '1'
+        date:
+          type: string
+          minLength: 1
+          description: Match date and time string
+          example: '2026-11-15T18:30:00Z'
+        status:
+          type: string
+          enum: [pending, live, finished]
+          description: Game status (defaults to 'pending' if omitted)
+          example: pending
+          default: pending
+        result_c1:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Local team quarter 1 points
+        result_c2:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Local team quarter 2 points
+        result_c3:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Local team quarter 3 points
+        result_c4:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Local team quarter 4 points
+        result_extra:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Local team overtime points
+        result_c1_opponent:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Opponent quarter 1 points
+        result_c2_opponent:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Opponent quarter 2 points
+        result_c3_opponent:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Opponent quarter 3 points
+        result_c4_opponent:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Opponent quarter 4 points
+        result_extra_opponent:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Opponent overtime points
+        fouls_c1:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Local team quarter 1 fouls
+        fouls_c2:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Local team quarter 2 fouls
+        fouls_c3:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Local team quarter 3 fouls
+        fouls_c4:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Local team quarter 4 fouls
+        fouls_extra:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Local team overtime fouls
+        fouls_c1_opponent:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Opponent quarter 1 fouls
+        fouls_c2_opponent:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Opponent quarter 2 fouls
+        fouls_c3_opponent:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Opponent quarter 3 fouls
+        fouls_c4_opponent:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Opponent quarter 4 fouls
+        fouls_extra_opponent:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Opponent overtime fouls
+
+    UpdateGameRequest:
+      type: object
+      required:
+        - team_id
+        - opponent
+        - round
+        - date
+        - status
+        - result_c1
+        - result_c2
+        - result_c3
+        - result_c4
+        - result_extra
+        - result_c1_opponent
+        - result_c2_opponent
+        - result_c3_opponent
+        - result_c4_opponent
+        - result_extra_opponent
+        - fouls_c1
+        - fouls_c2
+        - fouls_c3
+        - fouls_c4
+        - fouls_extra
+        - fouls_c1_opponent
+        - fouls_c2_opponent
+        - fouls_c3_opponent
+        - fouls_c4_opponent
+        - fouls_extra_opponent
+      properties:
+        team_id:
+          type: integer
+          format: int64
+          minimum: 1
+          description: ID of the associated home team
+          example: 1
+        opponent:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Name of the opposing team
+          example: Valencia Basket
+        round:
+          type: string
+          minLength: 1
+          description: Tournament or league round
+          example: '5'
+        date:
+          type: string
+          minLength: 1
+          description: Match date and time string
+          example: '2026-11-20T20:00:00Z'
+        status:
+          type: string
+          enum: [pending, live, finished]
+          description: Match status
+          example: live
+        result_c1:
+          type: integer
+          minimum: 0
+        result_c2:
+          type: integer
+          minimum: 0
+        result_c3:
+          type: integer
+          minimum: 0
+        result_c4:
+          type: integer
+          minimum: 0
+        result_extra:
+          type: integer
+          minimum: 0
+        result_c1_opponent:
+          type: integer
+          minimum: 0
+        result_c2_opponent:
+          type: integer
+          minimum: 0
+        result_c3_opponent:
+          type: integer
+          minimum: 0
+        result_c4_opponent:
+          type: integer
+          minimum: 0
+        result_extra_opponent:
+          type: integer
+          minimum: 0
+        fouls_c1:
+          type: integer
+          minimum: 0
+        fouls_c2:
+          type: integer
+          minimum: 0
+        fouls_c3:
+          type: integer
+          minimum: 0
+        fouls_c4:
+          type: integer
+          minimum: 0
+        fouls_extra:
+          type: integer
+          minimum: 0
+        fouls_c1_opponent:
+          type: integer
+          minimum: 0
+        fouls_c2_opponent:
+          type: integer
+          minimum: 0
+        fouls_c3_opponent:
+          type: integer
+          minimum: 0
+        fouls_c4_opponent:
+          type: integer
+          minimum: 0
+        fouls_extra_opponent:
+          type: integer
+          minimum: 0
+
+    GameResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        team_id:
+          type: integer
+          format: int64
+          example: 1
+        opponent:
+          type: string
+          example: Real Madrid Baloncesto
+        round:
+          type: string
+          example: '1'
+        date:
+          type: string
+          example: '2026-11-01T18:00:00Z'
+        status:
+          type: string
+          example: pending
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-10-31T12:00:00Z'
+        result_c1:
+          type: integer
+          example: 22
+        result_c2:
+          type: integer
+          example: 18
+        result_c3:
+          type: integer
+          example: 25
+        result_c4:
+          type: integer
+          example: 20
+        result_extra:
+          type: integer
+          example: 0
+        result_c1_opponent:
+          type: integer
+          example: 19
+        result_c2_opponent:
+          type: integer
+          example: 21
+        result_c3_opponent:
+          type: integer
+          example: 16
+        result_c4_opponent:
+          type: integer
+          example: 24
+        result_extra_opponent:
+          type: integer
+          example: 0
+        fouls_c1:
+          type: integer
+          example: 4
+        fouls_c2:
+          type: integer
+          example: 3
+        fouls_c3:
+          type: integer
+          example: 5
+        fouls_c4:
+          type: integer
+          example: 4
+        fouls_extra:
+          type: integer
+          example: 0
+        fouls_c1_opponent:
+          type: integer
+          example: 5
+        fouls_c2_opponent:
+          type: integer
+          example: 4
+        fouls_c3_opponent:
+          type: integer
+          example: 3
+        fouls_c4_opponent:
+          type: integer
+          example: 5
+        fouls_extra_opponent:
+          type: integer
+          example: 0
+
+    ProblemDetail:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+          example: Validation Failed
+        status:
+          type: integer
+          example: 400
+        detail:
+          type: string
+          example: Validation failed for request payload
+        instance:
+          type: string
+          format: uri
+        invalidParams:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            opponent: opponent cannot be blank
+            team_id: team_id must be a positive number
+
+  responses:
+    BadRequestError:
+      description: Invalid request parameters or malformed body (RFC 7807)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+
+    UnauthorizedError:
+      description: Authentication required or invalid/expired JWT token (RFC 7807)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+
+    NotFoundError:
+      description: Resource not found (RFC 7807)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+

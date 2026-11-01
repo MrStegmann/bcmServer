@@ -1,0 +1,278 @@
+openapi: 3.0.3
+info:
+  title: BCM Server - Teams API
+  description: Protected CRUD endpoints for managing basketball teams within BCM (Basket Club Manager).
+  version: 1.0.0
+servers:
+  - url: /api/v1
+    description: Current Base API Path
+  - url: /
+    description: Root Path Alternative
+
+paths:
+  /teams:
+    get:
+      tags:
+        - Teams
+      summary: List all teams
+      description: Retrieves a list of all active basketball teams. Requires valid JWT bearer token.
+      operationId: getAllTeams
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully retrieved list of teams
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      tags:
+        - Teams
+      summary: Create a new team
+      description: Creates a new basketball team. Validates JWT before parsing/validating request payload.
+      operationId: createTeam
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTeamRequest'
+      responses:
+        '201':
+          description: Team successfully created
+          headers:
+            Location:
+              description: URI of the newly created team
+              schema:
+                type: string
+                example: /api/v1/teams/1
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /teams/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Unique numeric identifier of the team
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        example: 1
+
+    get:
+      tags:
+        - Teams
+      summary: Get team by ID
+      description: Retrieves a single team profile by ID. Requires valid JWT bearer token.
+      operationId: getTeamById
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Team retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags:
+        - Teams
+      summary: Update team by ID
+      description: Updates the name and/or category of an existing team. Validates JWT before payload inspection.
+      operationId: updateTeam
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTeamRequest'
+      responses:
+        '200':
+          description: Team updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags:
+        - Teams
+      summary: Delete team by ID
+      description: Deletes a team and cascades deletion to associated players and games. Requires valid JWT bearer token.
+      operationId: deleteTeam
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Team deleted successfully (no content returned)
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer token format 'Bearer <JWT>'
+
+  schemas:
+    CreateTeamRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "Cadete Femenino A"
+          description: Mandatory, non-empty team name
+        category:
+          type: string
+          nullable: true
+          maxLength: 50
+          example: "U16 Federado"
+          description: Optional competition category or division
+
+    UpdateTeamRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "Senior Femenino Autonomico"
+          description: Updated team name (cannot be blank)
+        category:
+          type: string
+          nullable: true
+          maxLength: 50
+          example: "Senior"
+          description: Updated competition category
+
+    TeamResponse:
+      type: object
+      required:
+        - id
+        - name
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: "Cadete Femenino A"
+        category:
+          type: string
+          nullable: true
+          example: "U16 Federado"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-10-30T10:00:00Z"
+
+    ProblemDetail:
+      type: object
+      required:
+        - status
+        - title
+      properties:
+        type:
+          type: string
+          format: uri
+          example: "about:blank"
+        title:
+          type: string
+          example: "Validation Failed"
+        status:
+          type: integer
+          example: 400
+        detail:
+          type: string
+          example: "Validation failed for request payload"
+        instance:
+          type: string
+          example: "/api/v1/teams"
+        invalidParams:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            name: "Team name is required and cannot be blank"
+
+  responses:
+    UnauthorizedError:
+      description: Authentication credentials are missing, expired, or invalid. Returned before inspecting payload or database.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          example:
+            title: "Unauthorized"
+            status: 401
+            detail: "Authentication credentials are missing or invalid"
+
+    BadRequestError:
+      description: Request payload failed validation, missing mandatory fields, or malformed ID parameter.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          example:
+            title: "Validation Failed"
+            status: 400
+            detail: "Validation failed for request payload"
+            invalidParams:
+              name: "Team name is required and cannot be blank"
+
+    NotFoundError:
+      description: The specified team ID does not exist in the database.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          example:
+            title: "Resource Not Found"
+            status: 404
+            detail: "Team with ID 999 was not found"
+

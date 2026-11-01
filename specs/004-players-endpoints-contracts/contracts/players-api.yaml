@@ -1,0 +1,363 @@
+openapi: 3.0.3
+info:
+  title: BCM Server - Players API
+  description: Protected CRUD endpoints for managing basketball players within BCM (Basket Club Manager).
+  version: 1.0.0
+servers:
+  - url: /api/v1
+    description: Current Base API Path
+  - url: /
+    description: Root Path Alternative
+
+paths:
+  /players:
+    get:
+      tags:
+        - Players
+      summary: List all players or filter by team
+      description: Retrieves a list of players. If teamId query parameter is provided, filters players belonging to that specific team. Requires valid JWT bearer token.
+      operationId: getPlayers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: teamId
+          in: query
+          required: false
+          description: Optional filter to retrieve only players belonging to the specified team
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Successfully retrieved list of players
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlayerResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      tags:
+        - Players
+      summary: Create a new player
+      description: Registers a new basketball player on an existing team. Validates JWT before evaluating request payload.
+      operationId: createPlayer
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePlayerRequest'
+      responses:
+        '201':
+          description: Player successfully created
+          headers:
+            Location:
+              description: URI of the newly created player resource
+              schema:
+                type: string
+                example: /api/v1/players/1
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlayerResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Associated team specified in teamId not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /players/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Unique numeric identifier of the player
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        example: 1
+
+    get:
+      tags:
+        - Players
+      summary: Get player by ID
+      description: Retrieves a single player profile by identifier. Requires valid JWT bearer token.
+      operationId: getPlayerById
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Player retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlayerResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags:
+        - Players
+      summary: Update player by ID
+      description: Modifies details of an existing player (team assignment, name, jersey number, jersey name). Validates JWT before payload evaluation.
+      operationId: updatePlayer
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePlayerRequest'
+      responses:
+        '200':
+          description: Player updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlayerResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags:
+        - Players
+      summary: Delete player by ID
+      description: Deletes an existing player record and cascades deletion to associated player stats. Requires valid JWT bearer token.
+      operationId: deletePlayer
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Player deleted successfully (no content returned)
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Centralized stateless JWT bearer token. Obtain from /api/v1/auth/login.
+
+  responses:
+    UnauthorizedError:
+      description: Missing, invalid, or expired JWT token
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          example:
+            type: about:blank
+            title: Unauthorized
+            status: 401
+            detail: Authentication credentials are missing or invalid
+            instance: /api/v1/players
+
+    BadRequestError:
+      description: Request payload failed validation, missing mandatory fields, or malformed ID parameter
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          example:
+            type: about:blank
+            title: Validation Failed
+            status: 400
+            detail: Validation failed for request payload
+            instance: /api/v1/players
+            invalidParams:
+              firstName: First name is required and cannot be blank
+              number: Jersey number is required and cannot be blank
+
+    NotFoundError:
+      description: Targeted resource (player or referenced team) was not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          example:
+            type: about:blank
+            title: Resource Not Found
+            status: 404
+            detail: Player not found with id: 999
+            instance: /api/v1/players/999
+
+  schemas:
+    CreatePlayerRequest:
+      type: object
+      required:
+        - teamId
+        - firstName
+        - lastName
+        - number
+      properties:
+        teamId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Unique numeric identifier of the associated team
+          example: 1
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Player's given name
+          example: Michael
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Player's family name / surname
+          example: Jordan
+        number:
+          type: string
+          minLength: 1
+          maxLength: 10
+          description: Jersey or dorsal number
+          example: "23"
+        jerseyName:
+          type: string
+          maxLength: 50
+          nullable: true
+          description: Optional name printed on the jersey
+          example: JORDAN
+
+    UpdatePlayerRequest:
+      type: object
+      required:
+        - teamId
+        - firstName
+        - lastName
+        - number
+      properties:
+        teamId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Unique numeric identifier of the associated team
+          example: 1
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Player's given name
+          example: Michael
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Player's family name / surname
+          example: Jordan
+        number:
+          type: string
+          minLength: 1
+          maxLength: 10
+          description: Jersey or dorsal number
+          example: "23"
+        jerseyName:
+          type: string
+          maxLength: 50
+          nullable: true
+          description: Optional name printed on the jersey
+          example: JORDAN
+
+    PlayerResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique numeric identifier of the player
+          example: 1
+        teamId:
+          type: integer
+          format: int64
+          description: Unique numeric identifier of the team the player belongs to
+          example: 1
+        firstName:
+          type: string
+          description: Player's given name
+          example: Michael
+        lastName:
+          type: string
+          description: Player's family name / surname
+          example: Jordan
+        number:
+          type: string
+          description: Player's jersey or dorsal number
+          example: "23"
+        jerseyName:
+          type: string
+          nullable: true
+          description: Name printed on the player's jersey
+          example: JORDAN
+        createdAt:
+          type: string
+          format: date-time
+          description: UTC timestamp when the record was created
+          example: "2026-10-31T12:00:00Z"
+
+    ProblemDetail:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+          description: URI reference identifying the problem type (RFC 7807)
+          example: about:blank
+        title:
+          type: string
+          description: Short, human-readable summary of the problem
+          example: Validation Failed
+        status:
+          type: integer
+          description: HTTP status code
+          example: 400
+        detail:
+          type: string
+          description: Human-readable explanation specific to this occurrence
+          example: Validation failed for request payload
+        instance:
+          type: string
+          description: URI reference identifying the specific occurrence of the problem
+          example: /api/v1/players
+        invalidParams:
+          type: object
+          additionalProperties:
+            type: string
+          description: Key-value map of invalid fields and violation reasons (present on 400 Bad Request)
+
