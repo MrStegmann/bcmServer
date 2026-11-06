@@ -13,6 +13,7 @@ A modular, high-performance REST API backend powering the Basket Club Manager (B
 ## Table of Contents
 
 - [Overview](#overview)
+- [Documentation Suite](#documentation-suite)
 - [Architecture](#architecture)
 - [Key Features](#key-features)
 - [Technology Stack](#technology-stack)
@@ -32,6 +33,18 @@ A modular, high-performance REST API backend powering the Basket Club Manager (B
 - **Game Operations**: Quarter-by-quarter scoreboards (Q1–Q4, Overtime), team & opponent fouls, and live game states (`pending`, `live`, `finished`).
 - **Granular Box-Score Analytics**: Complete per-player, per-game statistics tracking shooting accuracy (1PT, 2PT, 3PT attempted/made), rebounds (offensive & defensive), assists, steals, turnovers, blocks, fouls, playing time, and PIR (Player Efficiency Rating / Valuation).
 - **Stateless Authentication**: High-security token issuance and verification with in-memory request throttling.
+
+---
+
+## Documentation Suite
+
+Detailed guides and manuals are available in the [`docs/`](file:///j:/GitHub/BasketApp/bcmServer/docs/README.md) directory:
+
+- [**Architecture & Design Guide**](file:///j:/GitHub/BasketApp/bcmServer/docs/architecture.md): Hexagonal layers, domain isolation, sequence diagrams, and Architecture Decision Records (ADRs).
+- [**API Reference Manual**](file:///j:/GitHub/BasketApp/bcmServer/docs/api_reference.md): Endpoint reference, JSON schemas, RFC 7807 problem details, rate limits, and curl examples.
+- [**Data Models & Database Schema**](file:///j:/GitHub/BasketApp/bcmServer/docs/data_models.md): PostgreSQL schema contracts, Flyway migrations (`V1`–`V6`), ER diagram, and PIR valuation formulas.
+- [**Operational Runbook**](file:///j:/GitHub/BasketApp/bcmServer/docs/runbook.md): Operations guide, Supabase IPv4 pooler setup, Flyway repairs, secret rotation, actuator health monitoring, and incident triage.
+- [**Developer Onboarding Guide**](file:///j:/GitHub/BasketApp/bcmServer/docs/onboarding.md): Quickstart setup, IDE annotation processing for MapStruct, tutorial on creating new hexagonal features, and test execution.
 
 ---
 
